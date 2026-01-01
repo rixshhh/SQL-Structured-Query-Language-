@@ -1,5 +1,4 @@
-CREATE TABLE Swiggy_data
-(
+CREATE TABLE Swiggy_data (
     state VARCHAR(100),
     city VARCHAR(100),
     order_date DATE,
@@ -13,8 +12,7 @@ CREATE TABLE Swiggy_data
 );
 
 -- TO Fetch all the Columns
-Select *
-from Swiggy_data;
+Select * from Swiggy_data;
 
 -- Data Validation
 
@@ -83,9 +81,7 @@ Select
 from Swiggy_data;
 
 -- Blank or Empty String
-SELECT state, city
-FROM Swiggy_data
-WHERE state = '' or city = '';
+SELECT state, city FROM Swiggy_data WHERE state = '' or city = '';
 
 -- Duplicate Records
 SELECT
@@ -117,9 +113,7 @@ HAVING
 
 -- DELETE THE DUPLICATE RECORDS
 WITH
-    cte
-    AS
-    (
+    cte AS (
         SELECT ctid
         FROM (
                 SELECT ctid, ROW_NUMBER() OVER (
@@ -127,7 +121,7 @@ WITH
                             state, city, order_date, restaurant_name, location, category, dish_name, price_inr, rating, rating_count
                         ORDER BY ctid
                     ) AS rn
-            FROM Swiggy_data
+                FROM Swiggy_data
             ) s
         WHERE
             rn > 1
@@ -136,14 +130,13 @@ DELETE FROM Swiggy_data
 WHERE
     ctid IN (
         SELECT ctid
-FROM cte
+        FROM cte
     );
 
 -- DIMENSIONAL MODELLING (STAR SCHEMA)
 
 -- STEP 1 -> CREATE TABLE
-CREATE TABLE dim_date
-(
+CREATE TABLE dim_date (
     date_id SERIAL PRIMARY KEY,
     full_date DATE UNIQUE,
     day INT,
@@ -155,8 +148,7 @@ CREATE TABLE dim_date
     day_name TEXT
 );
 
-SELECT *
-FROM dim_date;
+SELECT * FROM dim_date;
 
 -- STEP 2 -> INSERT THE VALUES
 INSERT INTO dim_date
@@ -176,8 +168,7 @@ FROM Swiggy_data
 WHERE order_date IS NOT NULL;
 
 -- LOCATION DIMENSION
-CREATE TABLE dim_location
-(
+CREATE TABLE dim_location (
     location_id SERIAL PRIMARY KEY,
     state TEXT,
     city TEXT,
@@ -187,37 +178,31 @@ CREATE TABLE dim_location
 
 -- INSERT VALUES IN LOCATION_DIMENSION
 INSERT INTO
-    dim_location
-    (state, city, location)
+    dim_location (state, city, location)
 SELECT DISTINCT
     state,
     city,
     location
 FROM Swiggy_data;
 
-SELECT *
-FROM dim_location;
+SELECT * FROM dim_location;
 
 -- RESTAURANT DIMENSION
-CREATE TABLE dim_restaurant
-(
+CREATE TABLE dim_restaurant (
     restaurant_id SERIAL PRIMARY KEY,
     restaurant_name TEXT UNIQUE
 );
 
 INSERT INTO
-    dim_restaurant
-    (restaurant_name)
+    dim_restaurant (restaurant_name)
 SELECT DISTINCT
     restaurant_name
 FROM Swiggy_data;
 
-SELECT *
-FROM dim_restaurant;
+SELECT * FROM dim_restaurant;
 
 -- DISH DIMENSION
-CREATE TABLE dim_dish
-(
+CREATE TABLE dim_dish (
     dish_key SERIAL PRIMARY KEY,
     dish_name TEXT,
     category TEXT,
@@ -226,19 +211,16 @@ CREATE TABLE dim_dish
 
 -- INSERT VALUE INTO DISH DIMENSION
 INSERT INTO
-    dim_dish
-    (dish_name, category)
+    dim_dish (dish_name, category)
 SELECT DISTINCT
     dish_name,
     category
 FROM Swiggy_data;
 
-SELECT *
-FROM dim_dish;
+SELECT * FROM dim_dish;
 
 -- FACT TABLE
-CREATE TABLE fact_orders
-(
+CREATE TABLE fact_orders (
     order_id SERIAL PRIMARY KEY,
     date_key INT REFERENCES dim_date (date_id),
     location_key INT REFERENCES dim_location (location_id),
@@ -274,14 +256,12 @@ FROM Swiggy_data s
     ON di.dish_name = s.dish_name
         AND di.category = s.category;
 
-SELECT *
-FROM fact_orders;
+SELECT * FROM fact_orders;
 
 --KPI's
 
 -- TOTAL NUMBER OF ORDERS
-SELECT COUNT(order_id) AS Total_number_of_orders
-FROM fact_orders;
+SELECT COUNT(order_id) AS Total_number_of_orders FROM fact_orders;
 
 -- TOTAL REVENUE (INR MILLIONS)
 SELECT
@@ -300,12 +280,10 @@ SELECT
 FROM fact_orders;
 
 -- AVERAGE RATING
-SELECT ROUND(AVG(rating), 2) as average_rating
-FROM fact_orders;
+SELECT ROUND(AVG(rating), 2) as average_rating FROM fact_orders;
 
 -- MONTHLY ORDER TRENDS
-SELECT *
-FROM dim_date;
+SELECT * FROM dim_date;
 
 SELECT
     d.month , d.month_name , d.year,
@@ -379,7 +357,7 @@ SELECT
 l.state,
 TO_CHAR
 (
-        SUM
+	SUM
 (f.price_inr::NUMERIC) / 1000000,
         'FM999,999,990.00'
     ) || ' INR Million' AS total_revenue,
@@ -399,15 +377,40 @@ ORDER BY SUM(f.price_inr) DESC
 LIMIT 10;
 
 -- TOP CATEGORIES BY ORDER VALUES
-SELECT 
-di.category, COUNT
-(*) AS total_orders
+SELECT di.category, COUNT(*) AS total_orders
 FROM fact_orders f
     JOIN dim_dish di on di.dish_key = f.dish_key
 GROUP BY
     di.category
-ORDER BY SUM
-(f.price_inr) DESC
+ORDER BY SUM(f.price_inr) DESC
 LIMIT 10;
 
---
+-- TOTAL ORDERS BY PRICE RANGE
+SELECT
+    CASE
+        WHEN price_inr::NUMERIC < 100 THEN 'Under 100'
+        WHEN price_inr::NUMERIC BETWEEN 100 AND 199 THEN '100–199'
+        WHEN price_inr::NUMERIC BETWEEN 200 AND 299 THEN '200–299'
+		WHEN price_inr::NUMERIC BETWEEN 300 AND 499 THEN '300–499'
+        ELSE '500+'
+    END AS price_range,
+    COUNT(*) AS total_orders
+FROM fact_orders
+GROUP BY 
+	CASE
+        WHEN price_inr::NUMERIC < 100 THEN 'Under 100'
+        WHEN price_inr::NUMERIC BETWEEN 100 AND 199 THEN '100–199'
+        WHEN price_inr::NUMERIC BETWEEN 200 AND 299 THEN '200–299'
+		WHEN price_inr::NUMERIC BETWEEN 300 AND 499 THEN '300–499'
+        ELSE '500+'
+    END
+ORDER BY total_orders;
+
+--RATING COUNT
+SELECT
+    rating,
+    COUNT(*) AS rating_distribution_count
+FROM fact_orders
+GROUP BY
+    rating
+ORDER BY rating DESC;
