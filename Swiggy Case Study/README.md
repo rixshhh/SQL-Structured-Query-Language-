@@ -4,12 +4,18 @@
 
 This project presents an end-to-end **Sales Analytics Dashboard** built using **PostgreSQL** as the backend database and **Power BI** for visualization. The dashboard analyzes Swiggy food order data to uncover insights related to **revenue, orders, locations, restaurants, categories, customer behavior, and pricing patterns**.
 
+
+
 The project follows **industry best practices** including:
 
 * Data cleaning & validation
 * Star schema dimensional modeling
 * KPI-driven dashboard design
 * Business-focused storytelling
+
+
+🔗 **Live Dashboard:** - [https://app.powerbi.com/view?r=eyJrIjoiZGJhMDZlZGUtZGYzZC00NTYzLTllYjQtOWUyYzY4YWIwYjZhIiwidCI6ImZiYmU2ZGI5LWE4YjItNGZhZi05MWEwLTQxNDUzYmQ3OWM2ZCJ9](https://app.powerbi.com/view?r=eyJrIjoiZGJhMDZlZGUtZGYzZC00NTYzLTllYjQtOWUyYzY4YWIwYjZhIiwidCI6ImZiYmU2ZGI5LWE4YjItNGZhZi05MWEwLTQxNDUzYmQ3OWM2ZCJ9
+)
 
 ---
 
